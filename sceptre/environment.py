@@ -186,6 +186,75 @@ class Environment(object):
         return response
 
     @recurse_into_sub_environments
+    def create_change_sets(self, change_set_name):
+        """
+        Returns each stack's status (including if it needs updates)
+
+        :returns: The stack status of each stack, keyed by the stack's name.
+        :rtype: dict
+        """
+        response = {}
+        for stack in self.stacks.values():
+            try:
+                status = stack.create_change_set_if_needed(change_set_name)
+            except StackDoesNotExistError:
+                status = "PENDING"
+            response.update({stack.name: status})
+        return response
+
+    @recurse_into_sub_environments
+    def describe_change_sets(self, change_set_name):
+        """
+        Returns each change set's description
+
+        :returns: The stack status of each stack, keyed by the stack's name.
+        :rtype: dict
+        """
+        response = {}
+
+
+        for stack in self.stacks.values():
+            try:
+                status = stack.describe_change_set(change_set_name)
+            except StackDoesNotExistError:
+                status = "PENDING"
+            response.update({stack.name: status})
+        return response
+
+    @recurse_into_sub_environments
+    def execute_change_sets(self, change_set_name):
+        """
+        Returns each change set's description
+
+        :returns: The stack status of each stack, keyed by the stack's name.
+        :rtype: dict
+        """
+        response = {}
+
+
+        for stack in self.stacks.values():
+            try:
+                status = stack.execute_change_set(change_set_name)
+            except StackDoesNotExistError:
+                status = "N/A"
+            response.update({stack.name: status})
+        return response
+
+    @recurse_into_sub_environments
+    def delete_change_sets(self, change_set_name):
+        """
+        Deletes all the changes sets
+
+        :returns: The stack status of each stack, keyed by the stack's name.
+        :rtype: dict
+        """
+        for stack in self.stacks.values():
+            try:
+                status = stack.delete_change_set(change_set_name)
+            except StackDoesNotExistError:
+                pass
+
+    @recurse_into_sub_environments
     def _build(self, command, threading_events, stack_statuses, dependencies):
         """
         Launches or deletes all stacks in the environment.

@@ -644,6 +644,25 @@ class Stack(object):
                 raise exp
         return status
 
+    def create_change_set_if_needed(self, change_set_name):
+        """
+        Generates a changeset to check if the stack is up to date
+
+        :returns: The stack's status.
+        :rtype: sceptre.stack_status.StackStatus
+        """
+        simple_status = self._get_simplified_status(self.get_status())
+        if simple_status != StackStatus.COMPLETE:
+            return simple_status
+
+        self.create_change_set(change_set_name)
+        self.wait_for_cs_completion(change_set_name)
+        if self._get_cs_status(change_set_name) == StackChangeSetStatus.DEFUNCT:
+            delete_change_set(self, change_set_name)
+            return StackStatus.COMPLETE
+        else:
+            return StackStatus.PENDING
+
     def _format_parameters(self, parameters):
         """
         Converts CloudFormation parameters to the format used by Boto3.

@@ -20,6 +20,7 @@ import warnings
 import click
 import colorama
 import yaml
+import time
 from boto3.exceptions import Boto3Error
 from botocore.exceptions import BotoCoreError, ClientError
 from jinja2.exceptions import TemplateError
@@ -406,7 +407,8 @@ def _simplify_change_set_description(response):
         "PhysicalResourceId",
         "Replacement",
         "ResourceType",
-        "Scope"
+        "Scope",
+        "Details"
     ]
     formatted_response = {
         k: v
@@ -638,6 +640,73 @@ def init_project(ctx, project_name):
     config_path = os.path.join(cwd, project_name, "config")
     _create_config_file(config_path, config_path, defaults)
 
+
+@cli.command(name="create-env-change-sets")
+@environment_options
+@click.option("--name")
+@click.pass_context
+@catch_exceptions
+def create_env_change_sets(ctx, environment, name):
+    """
+    Createds Change sets for all stacks within an ENV (Cleans them up if they are not needed)
+
+    Describes ENVIRONMENT stack statuses.
+    """
+    if "name" in ctx.obj["options"]:
+        change_set_name = ctx.obj["options"].pop("name")
+    else:
+        change_set_name = "sceptre-update-check-{}".format(int(time.time()))
+
+    env = get_env(ctx.obj["sceptre_dir"], environment, ctx.obj["options"])
+    responses = env.create_change_sets(change_set_name)
+    write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
+
+@cli.command(name="describe-env-change-sets")
+@environment_options
+@click.argument('change_set_name')
+@click.option("--verbose", is_flag=True)
+@click.pass_context
+@catch_exceptions
+def describe_env_change_sets(ctx, environment, change_set_name, verbose):
+    """
+    Describes the change sets matching the changeset name within an ENVIRONMENT
+    """
+    env = get_env(ctx.obj["sceptre_dir"], environment, ctx.obj["options"])
+    responses = env.describe_change_sets(change_set_name)
+    if not verbose:
+        for stack, description in responses.items():
+            responses[stack] = _simplify_change_set_description(description)
+    write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
+
+@cli.command(name="delete-env-change-sets")
+@environment_options
+@click.argument('change_set_name')
+@click.pass_context
+@catch_exceptions
+def describe_env_change_sets(ctx, environment, change_set_name):
+    """
+    Describes the stack statuses.
+
+    Describes ENVIRONMENT stack statuses.
+    """
+    env = get_env(ctx.obj["sceptre_dir"], environment, ctx.obj["options"])
+    responses = env.delete_change_sets(change_set_name)
+    write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
+
+@cli.command(name="execute-env-change-sets")
+@environment_options
+@click.argument('change_set_name')
+@click.pass_context
+@catch_exceptions
+def describe_env_change_sets(ctx, environment, change_set_name):
+    """
+    Describes the stack statuses.
+
+    Describes ENVIRONMENT stack statuses.
+    """
+    env = get_env(ctx.obj["sceptre_dir"], environment, ctx.obj["options"])
+    responses = env.execute_change_sets(change_set_name)
+    write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
 
 def _create_new_environment(config_dir, new_path):
     """
