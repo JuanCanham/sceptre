@@ -708,6 +708,64 @@ def describe_env_change_sets(ctx, environment, change_set_name):
     responses = env.execute_change_sets(change_set_name)
     write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
 
+
+@cli.command(name="generate-env")
+@environment_options
+@click.argument('output_dir')
+@click.pass_context
+@catch_exceptions
+def generate_env(ctx, environment, output_dir):
+    """
+    Generates an environment and it's current parameters
+
+    Prints ENVIRONMENT/STACK's template.
+    """
+    env = get_env(ctx.obj["sceptre_dir"], environment, ctx.obj["options"])
+    for stack_name, stack in env.stacks.items():
+        stack_config = stack.config
+
+        if 'sceptre_user_data' in stack_config:
+            template_dir = os.path.join("src",stack._environment_path)
+        else:
+            template_dir = os.path.join("src")
+
+
+
+        if not os.path.exists(os.path.join(output_dir,template_dir)):
+            os.makedirs(os.path.join(output_dir,template_dir))
+
+        if stack_config['template_path'].rsplit(".",1) in ["py","json"]:
+            template_type = "json"
+        else:
+            template_type = "yaml"
+
+        template_file = os.path.join(template_dir,"{}.{}".format(stack_name,template_type))
+
+        with open(os.path.join(output_dir,template_file), 'w') as f:
+            body = stack.template.body
+            f.write(body)
+
+        stack_config['template_path'] = str(template_file)
+        config_dir = os.path.join(output_dir,"config",stack._environment_path)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+
+
+        conf = {}
+        for k,v in  stack_config.items():
+            conf[k] = v
+
+        with open(os.path.join(config_dir,"{}.yaml".format(stack_name)), 'w') as f:
+            yaml.dump(conf, f, default_flow_style=False)
+
+        conf = {}
+        for k,v in stack.environment_config.items():
+            conf[k] = v
+
+        with open(os.path.join(config_dir,"config.yaml"), 'w') as f:
+            yaml.dump(conf, f, default_flow_style=False)
+
+
 def _create_new_environment(config_dir, new_path):
     """
     Creates the subfolder for the environment specified by `path` starting
