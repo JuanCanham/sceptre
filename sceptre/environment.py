@@ -12,6 +12,7 @@ from glob import glob
 import logging
 import os
 import threading
+import yaml
 
 import botocore
 
@@ -250,9 +251,59 @@ class Environment(object):
         """
         for stack in self.stacks.values():
             try:
-                status = stack.delete_change_set(change_set_name)
+                stack.delete_change_set(change_set_name)
             except StackDoesNotExistError:
                 pass
+
+    @recurse_into_sub_environments
+    def generate(self, output_dir):
+        """
+        Generates all the parameters and stacks for an environment
+        """
+        for stack_name, stack in self.stacks.items():
+            stack_config = stack.config
+
+            if 'sceptre_user_data' in stack_config:
+                template_dir = os.path.join("src", stack._environment_path)
+            else:
+                template_dir = os.path.join("src")
+
+            self._create_dir_if_needed(output_dir, template_dir)
+
+            # Assumes that python generates json
+            if stack_config['template_path'].rsplit(".", 1) in ["py", "json"]:
+                template_filename = "{}.json".format(stack_name)
+            else:
+                template_filename = "{}.yaml".format(stack_name)
+
+            template_file = os.path.join(template_dir, template_filename)
+
+            with open(os.path.join(output_dir, template_file), 'w') as f:
+                body = stack.template.body
+                f.write(body)
+
+            stack_config['template_path'] = str(template_file)
+
+            config_dir = self._create_dir_if_needed(
+                output_dir, "config", stack._environment_path)
+            self._dump_keys_to_file(stack_config, os.path.join(
+                config_dir, "{}.yaml".format(stack_name)))
+            self._dump_keys_to_file(
+                stack.environment_config, os.path.join(config_dir, "config.yaml"))
+
+    def _create_dir_if_needed(self, *args):
+        path = os.path.join(*args)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
+
+    def _dump_keys_to_file(self, obj, filename):
+        conf = {}
+        for k, v in obj.items():
+            conf[k] = v
+
+        with open(filename, 'w') as f:
+            yaml.dump(conf, f, default_flow_style=False)
 
     @recurse_into_sub_environments
     def _build(self, command, threading_events, stack_statuses, dependencies):
