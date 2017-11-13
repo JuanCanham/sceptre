@@ -199,7 +199,7 @@ class Environment(object):
             try:
                 status = stack.create_change_set_if_needed(change_set_name)
             except StackDoesNotExistError:
-                status = "PENDING"
+                status = stack.create_change_set(change_set_name)
             response.update({stack.name: status})
         return response
 

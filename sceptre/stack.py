@@ -201,7 +201,7 @@ class Stack(object):
                 for k, v in self.config.get("stack_tags", {}).items()
             ]
         }
-        create_stack_kwargs.update(self._get_template_details())
+        create_stack_kwargs.update(self.generate())
         create_stack_kwargs.update(self._get_role_arn())
         response = self.connection_manager.call(
             service="cloudformation",
@@ -235,7 +235,7 @@ class Stack(object):
                 for k, v in self.config.get("stack_tags", {}).items()
             ]
         }
-        update_stack_kwargs.update(self._get_template_details())
+        update_stack_kwargs.update(self.generate())
         update_stack_kwargs.update(self._get_role_arn())
         response = self.connection_manager.call(
             service="cloudformation",
@@ -503,7 +503,7 @@ class Stack(object):
         response = self.connection_manager.call(
             service="cloudformation",
             command="validate_template",
-            kwargs=self._get_template_details()
+            kwargs=self.generate()
         )
         self.logger.debug(
             "%s - Validate template response: %s", self.name, response
@@ -527,8 +527,12 @@ class Stack(object):
                 for k, v in self.config.get("stack_tags", {}).items()
             ]
         }
-        create_change_set_kwargs.update(self._get_template_details())
+        create_change_set_kwargs.update(self.generate())
         create_change_set_kwargs.update(self._get_role_arn())
+        try:
+            _status = self._get_simplified_status(self.get_status())
+        except StackDoesNotExistError:
+            create_change_set_kwargs.update(ChangeSetType="CREATE")
         self.logger.debug(
             "%s - Creating change set '%s'", self.name, change_set_name
         )
@@ -654,16 +658,14 @@ class Stack(object):
         :rtype: sceptre.stack_status.StackStatus
         """
         simple_status = self._get_simplified_status(self.get_status())
-        if simple_status != StackStatus.COMPLETE:
-            return simple_status
-
         self.create_change_set(change_set_name)
         self.wait_for_cs_completion(change_set_name)
-        if self._get_cs_status(change_set_name) == StackChangeSetStatus.DEFUNCT:
-            self.delete_change_set(self, change_set_name)
+        cs_status = self._get_cs_status(change_set_name)
+        if cs_status == StackChangeSetStatus.DEFUNCT:
+            self.delete_change_set(change_set_name)
             return StackStatus.COMPLETE
         else:
-            return StackStatus.PENDING
+            return cs_status
 
     def _format_parameters(self, parameters):
         """
@@ -687,7 +689,8 @@ class Stack(object):
 
         return formatted_parameters
 
-    def _get_template_details(self):
+    @add_stack_hooks
+    def generate(self):
         """
         Returns the CloudFormation template location.
 
@@ -697,7 +700,7 @@ class Stack(object):
         :returns: The location of the template.
         :rtype: dict
         """
-        template = SamTemplate(self.template.body)
+        template = SamTemplate(self)
         template.export()
         if "template_bucket_name" in self.environment_config:
             template_url = self.template.upload_to_s3(
