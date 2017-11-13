@@ -33,6 +33,8 @@ from .exceptions import UnknownStackChangeSetStatusError
 from .exceptions import StackDoesNotExistError
 from .exceptions import ProtectedStackError
 
+from .sam import SamTemplate
+
 
 class Stack(object):
     """
@@ -658,7 +660,7 @@ class Stack(object):
         self.create_change_set(change_set_name)
         self.wait_for_cs_completion(change_set_name)
         if self._get_cs_status(change_set_name) == StackChangeSetStatus.DEFUNCT:
-            delete_change_set(self, change_set_name)
+            self.delete_change_set(self, change_set_name)
             return StackStatus.COMPLETE
         else:
             return StackStatus.PENDING
@@ -695,6 +697,8 @@ class Stack(object):
         :returns: The location of the template.
         :rtype: dict
         """
+        template = SamTemplate(self.template.body)
+        template.export()
         if "template_bucket_name" in self.environment_config:
             template_url = self.template.upload_to_s3(
                 self.region,

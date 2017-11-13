@@ -641,7 +641,7 @@ def init_project(ctx, project_name):
     _create_config_file(config_path, config_path, defaults)
 
 
-@cli.command(name="create-env-change-sets")
+@cli.command(name="create-change-sets")
 @environment_options
 @click.option("--name")
 @click.pass_context
@@ -661,7 +661,7 @@ def create_env_change_sets(ctx, environment, name):
     responses = env.create_change_sets(change_set_name)
     write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
 
-@cli.command(name="describe-env-change-sets")
+@cli.command(name="describe-change-sets")
 @environment_options
 @click.argument('change_set_name')
 @click.option("--verbose", is_flag=True)
@@ -679,7 +679,7 @@ def describe_env_change_sets(ctx, environment, change_set_name, verbose):
     write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
 
 
-@cli.command(name="delete-env-change-sets")
+@cli.command(name="delete-change-sets")
 @environment_options
 @click.argument('change_set_name')
 @click.pass_context
@@ -695,7 +695,7 @@ def delete_env_change_sets(ctx, environment, change_set_name):
     write(responses, ctx.obj["output_format"], ctx.obj["no_colour"])
 
 
-@cli.command(name="execute-env-change-sets")
+@cli.command(name="execute-change-sets")
 @environment_options
 @click.argument('change_set_name')
 @click.pass_context
