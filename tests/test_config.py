@@ -78,7 +78,7 @@ class TestConfig(object):
         self.config.name = "vpc"
         self.config.read()
         assert self.config == {
-            'parameters': [{'param1': 'val1'}],
+            'parameters': {'param1': 'val1', 'param2': 'val2'},
             'dependencies': [],
             'template_path': 'path/to/template'
         }
@@ -161,6 +161,22 @@ class TestConfig(object):
                 "param6": "region"
             },
             'dependencies': []
+        }
+
+    def test_read_sibling_templated_config_file(self):
+        self.config.sceptre_dir = os.path.join(
+            os.getcwd(), "tests", "fixtures"
+        )
+        self.config.environment_path = os.path.join(
+            "account", "environment", "region"
+        )
+        self.config.name = "include"
+        self.config.read()
+
+        assert self.config == {
+            'parameters': {'param1': 'val1', 'param2': 'override2'},
+            'dependencies': [],
+            'template_path': 'path/to/include-template'
         }
 
     def test_check_env_path_exists_with_valid_dir(self):

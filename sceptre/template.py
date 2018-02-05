@@ -289,10 +289,15 @@ class Template(object):
         """
         logger = logging.getLogger(__name__)
         logger.debug("%s Rendering CloudFormation template", filename)
-        env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir),
-            undefined=jinja2.StrictUndefined
-        )
-        template = env.get_template(filename)
-        body = template.render(**jinja_vars)
+        try:
+            env = jinja2.Environment(
+                loader=jinja2.FileSystemLoader(template_dir),
+                undefined=jinja2.StrictUndefined
+            )
+            template = env.get_template(filename)
+            body = template.render(**jinja_vars)
+        except Exception as e:
+            logger.debug("Failed Rendering %s (%s)", filename, e)
+            raise
+
         return body

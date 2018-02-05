@@ -702,6 +702,7 @@ class Stack(object):
         """
         template = SamTemplate(self)
         template.export()
+        self.logger.debug("%s - Tempalte generated for ..", self.name )
         if "template_bucket_name" in self.environment_config:
             template_url = self.template.upload_to_s3(
                 self.region,

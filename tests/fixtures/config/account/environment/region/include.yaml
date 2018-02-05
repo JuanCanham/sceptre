@@ -1,0 +1,4 @@
+{% include 'vpc.yaml' %}
+template_path: path/to/include-template
+parameters:
+    param2: override2

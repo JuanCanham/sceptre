@@ -443,7 +443,8 @@ class TestEnvironment(object):
             "account/environment/region/vpc",
             "account/environment/region/subnets",
             "account/environment/region/security_groups",
-            "account/environment/region/instances"
+            "account/environment/region/instances",
+            "account/environment/region/include"
         ])
 
     @patch("sceptre.environment.Stack")
