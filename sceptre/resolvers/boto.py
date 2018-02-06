@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import boto3
-
 from sceptre.resolvers import Resolver
 
 
@@ -27,7 +25,7 @@ class BotoResponseVariable(Resolver):
             cmd, result_filter = cmd.split("::",1)
             result_filters = result_filter.split(".")
 
-        client = boto3.client(service)
+        client = self.stack.connection_manager.client(service)
         result = service.__getattribute__(cmd)
 
         for result_filter in result_filters:
