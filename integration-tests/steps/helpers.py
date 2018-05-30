@@ -30,6 +30,11 @@ def step_impl(context, message):
 def step_impl(context):
     assert (context.error is None)
 
+@then('no exception is raised')
+def step_impl(context):
+    assert (context.error is None)
+
+
 @then('a "{exception_type}" is raised')
 def step_impl(context, exception_type):
     if exception_type == "TemplateSceptreHandlerError":
